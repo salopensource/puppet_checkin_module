@@ -55,10 +55,7 @@ def get_puppet_state():
         out[resource.get("resource")] = {
             "date_managed": resource.get("time"),
             "status": status,
-            "data": {
-                "corrective_change": resource.get("corrective_change"),
-                "version": version,
-            },
+            "data": {"corrective_change": resource.get("corrective_change")},
         }
     return out
 
@@ -133,7 +130,7 @@ def get_facter_report():
     if facterflag:
         # restore pre-run facterlib
         os.environ["FACTERLIB"] = current_facterlib
-
+    facter["checkin_module_version"] = __version__
     return hashrocket_flatten_dict(facter)
 
 
