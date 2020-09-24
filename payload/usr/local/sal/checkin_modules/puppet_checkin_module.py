@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/sal/Python.framework/Versions/Current/bin/python3
 # Copyright 2019 Sal Opensource Project
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,13 +22,14 @@ import subprocess
 import sys
 import pprint
 
+import sal
+
 sys.path.insert(0, "/usr/local/sal")
-import utils
 import yaml
 
 PUPPET_LAST_RUN_SUMMARY = "/opt/puppetlabs/puppet/cache/state/last_run_report.yaml"
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def main():
@@ -36,7 +37,7 @@ def main():
     if os.path.exists(PUPPET_LAST_RUN_SUMMARY):
         results["managed_items"] = get_puppet_state()
     results["facts"] = get_facter_report()
-    utils.set_checkin_results("Puppet", results)
+    sal.set_checkin_results("Puppet", results)
 
 
 def get_puppet_state():
@@ -47,7 +48,7 @@ def get_puppet_state():
         data_loaded = yaml.safe_load(stream)
 
     out = {}
-    for _, resource in data_loaded.get("resource_statuses", {}).iteritems():
+    for _, resource in iter(data_loaded.get("resource_statuses", {}).items()):
         if not resource.get("skipped", False) and not resource.get("failed", False):
             status = "PRESENT"
         else:
