@@ -34,7 +34,7 @@ __version__ = "1.1.0"
 
 def main():
     results = {}
-    state_pref = sal.pref("ReportPuppetState", True)
+    state_pref = sal.sal_pref("ReportPuppetState", True)
     if os.path.exists(PUPPET_LAST_RUN_SUMMARY) and state_pref:
         results["managed_items"] = get_puppet_state()
     results["facts"] = get_facter_report()
