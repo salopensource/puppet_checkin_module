@@ -33,11 +33,16 @@ __version__ = "1.1.0"
 
 
 def main():
-    results = {}
+    results = dict(facts={}, managed_items={})
+    facts = get_facter_report()
     state_pref = sal.sal_pref("ReportPuppetState", True)
-    if os.path.exists(PUPPET_LAST_RUN_SUMMARY) and state_pref:
-        results["managed_items"] = get_puppet_state()
-    results["facts"] = get_facter_report()
+    if os.path.exists(PUPPET_LAST_RUN_SUMMARY):
+        report_time, items = get_puppet_state()
+        sal_facts = create_sal_facts(facts, items, report_time)
+        facts.update(sal_facts)
+        if state_pref:
+            results["managed_items"] = items
+    results["facts"] = facts
     sal.set_checkin_results("Puppet", results)
 
 
@@ -48,18 +53,28 @@ def get_puppet_state():
     with open(PUPPET_LAST_RUN_SUMMARY, "r") as stream:
         data_loaded = yaml.safe_load(stream)
 
-    out = {}
+    items = {}
+    report_time = data_loaded.get("time", None)
     for _, resource in iter(data_loaded.get("resource_statuses", {}).items()):
         if not resource.get("skipped", False) and not resource.get("failed", False):
             status = "PRESENT"
         else:
             status = "ERROR"
-        out[resource.get("resource")] = {
+        items[resource.get("resource")] = {
             "date_managed": resource.get("time"),
             "status": status,
             "data": {"corrective_change": resource.get("corrective_change")},
         }
-    return out
+    return (report_time, items)
+
+
+def create_sal_facts(facts, items, report_time):
+    sal_facts = {}
+    errors = [res for res in items.values() if res['status'] == 'ERROR']
+    sal_facts['puppet_errors'] = len(errors)
+    if report_time is not None:
+        sal_facts['last_puppet_run'] = report_time
+    return sal_facts
 
 
 def default_ctor(loader, tag_suffix, node):
